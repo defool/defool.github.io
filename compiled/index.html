@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>首页</title>
+  
+    <meta name="author" content="kaiyuan li">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/assets/twitter/stylesheets/bootstrap.min.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/stylesheets/style.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/widgets/google_prettify/stylesheets/twitter-bootstrap.css" type="text/css" rel="stylesheet" media="all">
+ 
+
+    <!-- Le fav and touch icons -->
+  <!-- Update these with your own images
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  -->
+  </head>
+
+  <body>
+
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">七叶的博客</a>
+          <ul class="nav">
+            
+              
+
+
+  <li><a href="/tags">标签</a></li>
+
+
+            
+              
+
+
+  <li><a href="/categories">分类</a></li>
+
+
+            
+              
+
+
+  <li><a href="/about">关于我</a></li>
+
+
+            
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div class="content">
+        
+<div class="page-header">
+  <h1>首页 </h1>
+</div>
+
+<div class="row">
+  <div class="span12">
+    
+<h2>最近文章</h2>
+
+
+<div class="post">
+  <h3 class="title"><a href="/性能优化/Python%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%8420%E6%9D%A1%E5%BB%BA%E8%AE%AE/">Python性能优化的20条建议</a> <span class="date">2014-09-12</span></h3>
+
+  <ol>
+<li><h3>优化算法时间复杂度</h3>
+
+<p>算法的时间复杂度对程序的执行效率影响最大，在Python中可以通过选择合适的数据结构来优化时间复杂度，如list和set查找某一个元素的时间复杂度分别是O(n)和O(1)。不同的场景有不同的优化方式，总得来说，一般有分治，分支界限，贪心，动态规划等思想。</p></li>
+
+<li><h3>减少冗余数据</h3>
+
+<p>如用上三角或下三角的方式去保存一个大的对称矩阵。在0元素占大多数的矩阵里使用稀疏矩阵表示。</p></li>
+
+<li><h3>合理使用copy与deepcopy</h3>
+
+<p>对于dict和list等数据结构的对象，直接赋值使用的是引用的方式。而有些情况下需要复制整个对象，这时可以使用copy包里的copy和deepcopy，这两个函数的不同之处在于后者是递归复制的。效率也不一样：（以下程序在ipython中运行）</p>
+
+<pre><code>import copy
+a = range(100000)
+%timeit -n 10 copy.copy(a) # 运行10次 copy.copy(a)
+%timeit -n 10 copy.deepcopy(a)
+10 loops, best of 3: 1.55 ms per loop
+10 loops, best of 3: 151 ms per loop
+</code></pre></li>
+</ol>
+
+
+  <div class="more">
+    <a href="/性能优化/Python%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%8420%E6%9D%A1%E5%BB%BA%E8%AE%AE/" class="btn">read more..</a>
+  </div>
+</div>
+
+<div class="post">
+  <h3 class="title"><a href="/数据结构/%E5%B8%B8%E8%A7%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95%E5%8F%8A%E5%85%B6%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF/">常见的数据结构与算法及其应用场景</a> <span class="date">2014-02-19</span></h3>
+
+  <h2>1. 常见数据结构</h2>
+
+<p>根据wikipedia上的列表，数据结构分为线性、树、哈希、图等类型。</p>
+
+<h3>线性数据结构</h3>
+
+<ul>
+<li><p>数组</p>
+
+<p>位图索引：一种高效、节省空间的索引。</p></li>
+
+<li><p>链表</p></li>
+
+<li><p>块状链表</p>
+
+<p>综合了数组随机访问、遍历、存储空间方面的优点和链表插入、删除、空间扩展方面的优点。[2]</p></li>
+
+<li><p>对应的抽象数据类型：栈，队列（单/双向、优先队列）</p></li>
+</ul>
+
+<h3>树型数据结构</h3>
+
+
+  <div class="more">
+    <a href="/数据结构/%E5%B8%B8%E8%A7%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95%E5%8F%8A%E5%85%B6%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF/" class="btn">read more..</a>
+  </div>
+</div>
+
+<div class="post">
+  <h3 class="title"><a href="/编程工具/Git%E4%BD%BF%E7%94%A8%E5%B8%AE%E5%8A%A9/">Git使用帮助</a> <span class="date">2013-10-03</span></h3>
+
+  <p><strong>Git</strong>是一个分布式的版本管理软件。相比于SVN，Git分布式的模式使得它对网络的依赖性较低， 只有在同步最新版本(fetch/push)时才需要连接网络，同时Git具有更高效的存储方式。</p>
+
+<h2>安装</h2>
+
+<p>Ubuntu可用apt-get安装：<code>apt-get install git</code>。或通过[源码安装][1]。</p>
+
+<h2>配置</h2>
+
+<p>使用<code>git config</code>进行配置，安装后最好设定自己的用户名和邮箱，也可以给git命令设置别名。</p>
+
+<pre><code>git config --global user.name myname # 要改成你的用户名
+git config --global user.email myemail@mail.com # 改成你的邮箱名
+git config --global core.editor vim
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+git config --global --list
+</code></pre>
+
+
+  <div class="more">
+    <a href="/编程工具/Git%E4%BD%BF%E7%94%A8%E5%B8%AE%E5%8A%A9/" class="btn">read more..</a>
+  </div>
+</div>
+
+  </div>
+</div>
+
+      </div>
+
+      <footer>
+        <p>&copy; kaiyuan li 2013 
+          with help from <a href="http://github.com/wendal/gor" target="_blank" title="Gor -- Fast Blog">Gor</a>
+          and <a href="http://twitter.github.com/bootstrap/" target="_blank">Twitter Bootstrap</a>
+		  and Idea from <a href="http://ruhoh.com" target="_blank" title="The Definitive Technical Blogging Framework">ruhoh</a>
+        </p>
+      </footer>
+
+    </div> <!-- /container -->
+
+    
+<script src="//cdnjscn.b0.upaiyun.com/libs/prettify/r298/prettify.min.js"></script>
+<script>
+  var pres = document.getElementsByTagName("pre");
+  for (var i=0; i < pres.length; ++i) {
+    pres[i].className = "prettyprint linenums";
+  }
+  prettyPrint();
+</script>
+
+    
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  var pluginUrl = '//www.google-analytics.com/plugins/ga/inpage_linkid.js';
+  _gaq.push(['_require', 'inpage_linkid', pluginUrl]);
+  _gaq.push(['_setAccount', 'UA-123-12']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  </body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Git使用帮助</title>
+  
+    <meta name="description" content="Git是一个分布式的版本管理软件。相比于SVN，Git分布式的模式使得它对网络的依赖性较低，只有在同步最新版本(fetch/push)时才需要连接网络，同时Git具有更高效的存储方式。">
+  
+    <meta name="author" content="kaiyuan li">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/assets/twitter/stylesheets/bootstrap.min.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/stylesheets/style.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/widgets/google_prettify/stylesheets/twitter-bootstrap.css" type="text/css" rel="stylesheet" media="all">
+ 
+
+    <!-- Le fav and touch icons -->
+  <!-- Update these with your own images
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  -->
+  </head>
+
+  <body>
+
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">七叶的博客</a>
+          <ul class="nav">
+            
+              
+
+
+  <li><a href="/tags">标签</a></li>
+
+
+            
+              
+
+
+  <li><a href="/categories">分类</a></li>
+
+
+            
+              
+
+
+  <li><a href="/about">关于我</a></li>
+
+
+            
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div class="content">
+        <div class="page-header">
+  <h1>Git使用帮助 </h1>
+</div>
+
+<div class="row">
+  <div class="span8">
+    <p><strong>Git</strong>是一个分布式的版本管理软件。相比于SVN，Git分布式的模式使得它对网络的依赖性较低， 只有在同步最新版本(fetch/push)时才需要连接网络，同时Git具有更高效的存储方式。</p>
+
+<h2>安装</h2>
+
+<p>Ubuntu可用apt-get安装：<code>apt-get install git</code>。或通过<a href="http://git-scm.com/download">源码安装</a>。</p>
+
+<h2>配置</h2>
+
+<p>使用<code>git config</code>进行配置，安装后最好设定自己的用户名和邮箱，也可以给git命令设置别名。</p>
+
+<pre><code>git config --global user.name myname # 要改成你的用户名
+git config --global user.email myemail@mail.com # 改成你的邮箱名
+git config --global core.editor vim
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+git config --global --list
+</code></pre>
+
+<!--more-->
+
+<h2>使用</h2>
+
+<ol>
+<li>下载版本库代码</li>
+</ol>
+
+<p>使用<code>git clone</code>（类似于svn checkout），下面的例子中需要输入密码(测试账号密码为gitpass)</p>
+
+<pre><code>cd 
+git clone git@42.121.109.199:/git/project.git
+</code></pre>
+
+<ol>
+<li><p>查看文件状态</p>
+
+<p>Git下文件有三种状态：已修改（modified）和已暂存（staged），已提交（committed），如要修改一个文件，编辑保存后文件的状态为modified，运行 <code>git add [newfile]</code> 后状态变为staged，然后运行<code>git commit</code>将变化提交到版本库，状态变为committed。</p>
+
+<p>使用<code>git status</code>可查看文件状态:</p>
+
+<pre><code>cd project
+git status
+echo 'I name all my projects after myself. First Linux, now git.' &gt;&gt; newfile
+git status
+git add newfile 
+git status
+git commit -m 'Just have fun!'
+</code></pre></li>
+
+<li><p>将修改的文件添加到暂存(staged)文件</p>
+
+<p><code>git add [arg]</code>，arg可以文件或目录名，如果是目录会将目录下所有文件添加到staged状态。</p></li>
+
+<li><p>查看文件内容变化</p>
+
+<p><code>git diff</code>会显示modified状态下的所有文件内容与上次提交后的变化，<code>git diff --cached</code>会显示staged状态下文件内容与上次提交的变化。</p>
+
+<pre><code>echo 'Linus is Git ?' &gt;&gt; newfile
+git diff # 若此时运行git diff --cached，没有显示文件内容的变化
+git add newfile
+git diff --cached
+git commit -m 'show diff'
+</code></pre></li>
+
+<li><p>分支的添加与合并</p>
+
+<p>git中分支与svn不同，git可以通过单个命令就可以切换分支且无需复制代码。</p>
+
+<p><code>git branch</code>显示所有分支，带<code>*</code>的分支为当前的分支，<code>git branch [branch-name]</code>添加分支，<code>git checkout [branch-name]</code>切换分支， <code>git merge [branch-name]</code>将另一个分支合并到当前分支,<code>git branch -d [branch-name]</code>删除分支。合并分支可能会产生冲突，编辑有冲突的文件后用<code>git add</code>解决冲突，然后才可以commit代码。</p>
+
+<pre><code>git branch
+git branch mybranch
+git checkout mybranch
+echo 'Yes' &gt;&gt; newfile
+git add newfile
+git commit -m 'mybranch come'
+
+git checkout master
+git merge mybranch
+git branch -d mybranch
+git commit -m 'merge mybranch'
+</code></pre></li>
+
+<li><p>提交到远程版本库</p>
+
+<p><code>git remote -v</code>可以看到远程版本库的信息，<code>git push [remote-name] [branch-name]</code>将当前分支的内容提交到远程服务器(remote-name)的branch-name分支。如果在push前，已经有其他人push过，则需要把他们的更新<code>git fetch [remote-name]</code>到本地，merge到自己的branch中，然后才可以再次push。</p>
+
+<pre><code>git push origin master
+git fetch origin master
+</code></pre>
+
+<p><strong>注意</strong>：<code>git fetch</code>只是将版本库信息更新下来，即使同一个版本也要合并<code>git merge [branch-name]</code>才会见到更新，或者用<code>git pull [remote-name] [branch-name]</code>，这个相当于同时执行fetch和merge命令。</p></li>
+
+<li><p>显示提交的记录</p>
+
+<p><code>git log</code>即可，通过参数可以定制显示的格式，详情<code>git log --help</code>(其他命令加--help都可以看到对应的用法)。<code>gitk</code>是集成到git中显示历史提交记录的工具，图形化的界面一目了然。</p></li>
+
+<li><p>Git的详细使用可以看<a href="https://github.com/progit/progit">progit</a>。</p></li>
+</ol>
+
+<h2>搭建Git服务器（SSH方式）</h2>
+
+<ol>
+<li><p>创建一个普通用户(尽量不要用root用户)。</p></li>
+
+<li><p>在一个有读写权限的目录新建一个目录，进入目录后创建祼仓库，至此Git服务器创建完成。</p>
+
+<pre><code>sudo adduser git
+su git
+mkdir ~/proj.git
+cd ~/proj.git
+git init --bare
+</code></pre></li>
+
+<li><p>在某一个机器上使用该仓库：</p>
+
+<pre><code>git clone git@192.168.1.124:~/proj.git #第2个git为之前创建的用户名，ip为git服务器的ip，后面是git仓库的目录。
+cd proj
+touch test_git
+git add .
+git commit -m 'Just a test'
+git push origin master #将修改提交到Git服务器
+gitk
+</code></pre></li>
+</ol>
+
+<h2>参考</h2>
+
+<ol>
+<li><a href="http://zh.wikipedia.org/wiki/Git">http://zh.wikipedia.org/wiki/Git</a></li>
+<li><a href="http://www.aqee.net/5-fundamental-differences-between-git-svn/">http://www.aqee.net/5-fundamental-differences-between-git-svn/</a></li>
+<li><a href="https://github.com/progit/progit/blob/master/zh/">https://github.com/progit/progit/blob/master/zh/</a></li>
+</ol>
+
+    <hr>
+    <div class="pagination">
+      <ul>
+        <ul>
+          
+            <li class="prev"><a href="/数据结构/%E5%B8%B8%E8%A7%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95%E5%8F%8A%E5%85%B6%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF/" title="常见的数据结构与算法及其应用场景">&larr; Previous</a></li>
+          
+          
+
+            <li><a href="/archive">Archive</a></li>
+
+          
+          
+            <li class="next disabled"><a>Next &rarr;</a>
+          
+        </ul>
+      </ul>
+    </div>
+    <hr>
+    
+<div id="disqus_thread"></div>
+<script>
+    var disqus_developer = 1;
+    var disqus_shortname = 'jekyllbootstrap'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+  </div>
+  
+  <div class="span4">
+    <h4>Published</h4>
+    <div class="date"><span>2013-10-03</span></div>
+    <br>
+    <h4>Categories</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/categories/#%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7-ref">编程工具 <span>1</span></a>
+</li>
+    
+    </ul>
+    <br>
+    <h4>Tags</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/tags/#Git-ref">Git <span>1</span></a>
+</li>
+    
+      <li>
+  <a href="/tags/#%E4%BB%A3%E7%A0%81%E5%90%8C%E6%AD%A5-ref">代码同步 <span>1</span></a>
+</li>
+    
+    </ul>
+  </div>
+</div>
+
+      </div>
+
+      <footer>
+        <p>&copy; kaiyuan li 2013 
+          with help from <a href="http://github.com/wendal/gor" target="_blank" title="Gor -- Fast Blog">Gor</a>
+          and <a href="http://twitter.github.com/bootstrap/" target="_blank">Twitter Bootstrap</a>
+		  and Idea from <a href="http://ruhoh.com" target="_blank" title="The Definitive Technical Blogging Framework">ruhoh</a>
+        </p>
+      </footer>
+
+    </div> <!-- /container -->
+
+    
+<script src="//cdnjscn.b0.upaiyun.com/libs/prettify/r298/prettify.min.js"></script>
+<script>
+  var pres = document.getElementsByTagName("pre");
+  for (var i=0; i < pres.length; ++i) {
+    pres[i].className = "prettyprint linenums";
+  }
+  prettyPrint();
+</script>
+
+    
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  var pluginUrl = '//www.google-analytics.com/plugins/ga/inpage_linkid.js';
+  _gaq.push(['_require', 'inpage_linkid', pluginUrl]);
+  _gaq.push(['_setAccount', 'UA-123-12']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  </body>
+</html>

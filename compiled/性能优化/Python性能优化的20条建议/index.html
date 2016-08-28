@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Python性能优化的20条建议</title>
+  
+    <meta name="description" content="Python性能优化">
+  
+    <meta name="author" content="kaiyuan li">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/assets/twitter/stylesheets/bootstrap.min.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/stylesheets/style.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/widgets/google_prettify/stylesheets/twitter-bootstrap.css" type="text/css" rel="stylesheet" media="all">
+ 
+
+    <!-- Le fav and touch icons -->
+  <!-- Update these with your own images
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  -->
+  </head>
+
+  <body>
+
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">七叶的博客</a>
+          <ul class="nav">
+            
+              
+
+
+  <li><a href="/tags">标签</a></li>
+
+
+            
+              
+
+
+  <li><a href="/categories">分类</a></li>
+
+
+            
+              
+
+
+  <li><a href="/about">关于我</a></li>
+
+
+            
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div class="content">
+        <div class="page-header">
+  <h1>Python性能优化的20条建议 </h1>
+</div>
+
+<div class="row">
+  <div class="span8">
+    <ol>
+<li><h3>优化算法时间复杂度</h3>
+
+<p>算法的时间复杂度对程序的执行效率影响最大，在Python中可以通过选择合适的数据结构来优化时间复杂度，如list和set查找某一个元素的时间复杂度分别是O(n)和O(1)。不同的场景有不同的优化方式，总得来说，一般有分治，分支界限，贪心，动态规划等思想。</p></li>
+
+<li><h3>减少冗余数据</h3>
+
+<p>如用上三角或下三角的方式去保存一个大的对称矩阵。在0元素占大多数的矩阵里使用稀疏矩阵表示。</p></li>
+
+<li><h3>合理使用copy与deepcopy</h3>
+
+<p>对于dict和list等数据结构的对象，直接赋值使用的是引用的方式。而有些情况下需要复制整个对象，这时可以使用copy包里的copy和deepcopy，这两个函数的不同之处在于后者是递归复制的。效率也不一样：（以下程序在ipython中运行）</p>
+
+<pre><code>import copy
+a = range(100000)
+%timeit -n 10 copy.copy(a) # 运行10次 copy.copy(a)
+%timeit -n 10 copy.deepcopy(a)
+10 loops, best of 3: 1.55 ms per loop
+10 loops, best of 3: 151 ms per loop
+</code></pre>
+
+<p>timeit后面的-n表示运行的次数，后两行对应的是两个timeit的输出，下同。由此可见后者慢一个数量级。</p></li>
+</ol>
+
+<!--more-->
+
+<ol>
+<li><h3>使用dict或set查找元素</h3>
+
+<p>python dict和set都是使用hash表来实现(类似c++11标准库中unordered_map)，查找元素的时间复杂度是O(1)</p>
+
+<pre><code>a = range(1000)
+s = set(a)
+d = dict((i,1) for i in a)
+%timeit -n 10000 100 in d
+%timeit -n 10000 100 in s
+10000 loops, best of 3: 43.5 ns per loop
+10000 loops, best of 3: 49.6 ns per loop
+</code></pre>
+
+<p><code>dict</code>的效率略高(占用的空间也多一些)。</p></li>
+
+<li><h3>合理使用生成器（generator）和yield</h3>
+
+<pre><code>%timeit -n 100 a = (i for i in range(100000))
+%timeit -n 100 b = [i for i in range(100000)]
+100 loops, best of 3: 1.54 ms per loop
+100 loops, best of 3: 4.56 ms per loop
+</code></pre>
+
+<p>使用<code>()</code>得到的是一个generator对象，所需要的内存空间与列表的大小无关，所以效率会高一些。在具体应用上，比如set(i for i in range(100000))会比set([i for i in range(100000)])快。</p>
+
+<p>但是对于需要循环遍历的情况：</p>
+
+<pre><code>%timeit -n 10 for x in (i for i in range(100000)): pass
+%timeit -n 10 for x in [i for i in range(100000)]: pass
+10 loops, best of 3: 6.51 ms per loop
+10 loops, best of 3: 5.54 ms per loop
+</code></pre>
+
+<p>后者的效率反而更高，但是如果循环里有break,用generator的好处是显而易见的。<code>yield</code>也是用于创建generator：</p>
+
+<pre><code>def yield_func(ls):
+    for i in ls:
+        yield i+1
+
+def not_yield_func(ls):
+    return [i+1 for i in ls]
+
+ls = range(1000000)
+%timeit -n 10 for i in yield_func(ls):pass
+%timeit -n 10 for i in not_yield_func(ls):pass
+10 loops, best of 3: 63.8 ms per loop
+10 loops, best of 3: 62.9 ms per loop
+</code></pre>
+
+<p>对于内存不是非常大的list，可以直接返回一个list，但是可读性<code>yield</code>更佳(人个喜好)。</p>
+
+<p>python2.x内置generator功能的有xrange函数、itertools包等。</p></li>
+
+<li><h3>优化循环</h3>
+
+<p>循环之外能做的事不要放在循环内，比如下面的优化可以快一倍：</p>
+
+<pre><code>a = range(10000)
+size_a = len(a)
+%timeit -n 1000 for i in a: k = len(a)
+%timeit -n 1000 for i in a: k = size_a
+1000 loops, best of 3: 569 µs per loop
+1000 loops, best of 3: 256 µs per loop
+</code></pre></li>
+
+<li><h3>优化包含多个判断表达式的顺序</h3>
+
+<p>对于and，应该把满足条件少的放在前面，对于or，把满足条件多的放在前面。如：</p>
+
+<pre><code>a = range(2000)  
+%timeit -n 100 [i for i in a if 10 &lt; i &lt; 20 or 1000 &lt; i &lt; 2000]
+%timeit -n 100 [i for i in a if 1000 &lt; i &lt; 2000 or 100 &lt; i &lt; 20]     
+%timeit -n 100 [i for i in a if i % 2 == 0 and i &gt; 1900]
+%timeit -n 100 [i for i in a if i &gt; 1900 and i % 2 == 0]
+100 loops, best of 3: 287 µs per loop
+100 loops, best of 3: 214 µs per loop
+100 loops, best of 3: 128 µs per loop
+100 loops, best of 3: 56.1 µs per loop
+</code></pre></li>
+
+<li><h3>使用join合并迭代器中的字符串</h3>
+
+<pre><code>In [1]: %%timeit
+   ...: s = ''
+   ...: for i in a:
+   ...:         s += i
+   ...:
+10000 loops, best of 3: 59.8 µs per loop
+
+In [2]: %%timeit
+s = ''.join(a)
+   ...:
+100000 loops, best of 3: 11.8 µs per loop
+</code></pre>
+
+<p><code>join</code>对于累加的方式，有大约5倍的提升。</p></li>
+
+<li><h3>选择合适的格式化字符方式</h3>
+
+<pre><code>s1, s2 = 'ax', 'bx'
+%timeit -n 100000 'abc%s%s' % (s1, s2)
+%timeit -n 100000 'abc{0}{1}'.format(s1, s2)
+%timeit -n 100000 'abc' + s1 + s2
+100000 loops, best of 3: 183 ns per loop
+100000 loops, best of 3: 169 ns per loop
+100000 loops, best of 3: 103 ns per loop
+</code></pre>
+
+<p>三种情况中，<code>%</code>的方式是最慢的，但是三者的差距并不大（都非常快）。(个人觉得<code>%</code>的可读性最好)</p></li>
+
+<li><h3>不借助中间变量交换两个变量的值</h3>
+
+<pre><code>In [3]: %%timeit -n 10000
+    a,b=1,2
+   ....: c=a;a=b;b=c;
+   ....:
+10000 loops, best of 3: 172 ns per loop
+
+In [4]: %%timeit -n 10000
+a,b=1,2
+a,b=b,a
+   ....:
+10000 loops, best of 3: 86 ns per loop
+</code></pre>
+
+<p>使用<code>a,b=b,a</code>而不是<code>c=a;a=b;b=c;</code>来交换a,b的值，可以快1倍以上。</p></li>
+
+<li><h3>使用<code>if is</code></h3>
+
+<pre><code>a = range(10000)
+%timeit -n 100 [i for i in a if i == True]
+%timeit -n 100 [i for i in a if i is True]
+100 loops, best of 3: 531 µs per loop
+100 loops, best of 3: 362 µs per loop
+</code></pre>
+
+<p>使用 <code>if is True</code> 比 <code>if == True</code> 将近快一倍。</p></li>
+
+<li><h3>使用级联比较<code>x &lt; y &lt; z</code></h3>
+
+<pre><code>x, y, z = 1,2,3
+%timeit -n 1000000 if x &lt; y &lt; z:pass
+%timeit -n 1000000 if x &lt; y and y &lt; z:pass
+1000000 loops, best of 3: 101 ns per loop
+1000000 loops, best of 3: 121 ns per loop
+</code></pre>
+
+<p><code>x &lt; y &lt; z</code>效率略高，而且可读性更好。</p></li>
+
+<li><h3><code>while 1</code> 比 <code>while True</code> 更快</h3>
+
+<pre><code>def while_1():
+    n = 100000
+    while 1:
+        n -= 1
+        if n &lt;= 0: break
+def while_true():
+    n = 100000
+    while True:
+        n -= 1
+        if n &lt;= 0: break    
+
+m, n = 1000000, 1000000 
+%timeit -n 100 while_1()
+%timeit -n 100 while_true()
+100 loops, best of 3: 3.69 ms per loop
+100 loops, best of 3: 5.61 ms per loop
+</code></pre>
+
+<p>while 1 比 while true快很多，原因是在python2.x中，True是一个全局变量，而非关键字。</p></li>
+
+<li><h3>使用<code>**</code>而不是pow</h3>
+
+<pre><code>%timeit -n 10000 c = pow(2,20)
+%timeit -n 10000 c = 2**20
+10000 loops, best of 3: 284 ns per loop
+10000 loops, best of 3: 16.9 ns per loop
+</code></pre>
+
+<p><code>**</code>就是快10倍以上！</p></li>
+
+<li><h3>使用 cProfile, cStringIO 和 cPickle等用c实现相同功能（分别对应profile, StringIO, pickle）的包</h3>
+
+<pre><code>import cPickle
+import pickle
+a = range(10000)
+%timeit -n 100 x = cPickle.dumps(a)
+%timeit -n 100 x = pickle.dumps(a)
+100 loops, best of 3: 1.58 ms per loop
+100 loops, best of 3: 17 ms per loop
+</code></pre>
+
+<p>由c实现的包，速度快10倍以上！</p></li>
+
+<li><h3>使用最佳的反序列化方式</h3>
+
+<p>下面比较了eval, cPickle, json方式三种对相应字符串反序列化的效率：</p>
+
+<pre><code>import json
+import cPickle
+a = range(10000)
+s1 = str(a)
+s2 = cPickle.dumps(a)
+s3 = json.dumps(a)
+%timeit -n 100 x = eval(s1)
+%timeit -n 100 x = cPickle.loads(s2)
+%timeit -n 100 x = json.loads(s3)
+100 loops, best of 3: 16.8 ms per loop
+100 loops, best of 3: 2.02 ms per loop
+100 loops, best of 3: 798 µs per loop
+</code></pre>
+
+<p>可见json比cPickle快近3倍，比eval快20多倍。</p></li>
+
+<li><h3>使用C扩展(Extension)</h3>
+
+<p>目前主要有CPython(python最常见的实现的方式)原生API, ctypes,Cython，cffi三种方式，它们的作用是使得Python程序可以调用由C编译成的动态链接库，其特点分别是：</p>
+
+<p><strong>CPython原生API</strong>: 通过引入<code>Python.h</code>头文件，对应的C程序中可以直接使用Python的数据结构。实现过程相对繁琐，但是有比较大的适用范围。</p>
+
+<p><strong>ctypes</strong>: 通常用于封装(wrap)C程序，让纯Python程序调用动态链接库（Windows中的dll或Unix中的so文件）中的函数。如果想要在python中使用已经有C类库，使用ctypes是很好的选择，有一些基准测试下，python2+ctypes是性能最好的方式。</p>
+
+<p><strong>Cython</strong>: Cython是CPython的超集，用于简化编写C扩展的过程。Cython的优点是语法简洁，可以很好地兼容numpy等包含大量C扩展的库。Cython的使得场景一般是针对项目中某个算法或过程的优化。在<a href="http://docs.cython.org/src/tutorial/numpy.html">某些测试</a>中，可以有几百倍的性能提升。</p>
+
+<p><strong>cffi</strong>: cffi的就是ctypes在pypy（详见下文）中的实现，同进也兼容CPython。cffi提供了在python使用C类库的方式，可以直接在python代码中编写C代码，同时支持链接到已有的C类库。</p>
+
+<p>使用这些优化方式一般是针对已有项目性能瓶颈模块的优化，可以在少量改动原有项目的情况下大幅度地提高整个程序的运行效率。</p></li>
+
+<li><h3>并行编程</h3>
+
+<p>因为GIL的存在，Python很难充分利用多核CPU的优势。但是，可以通过内置的模块multiprocessing实现下面几种并行模式：</p>
+
+<p><strong>多进程</strong>：对于CPU密集型的程序，可以使用multiprocessing的Process,Pool等封装好的类，通过多进程的方式实现并行计算。但是因为进程中的通信成本比较大，对于进程之间需要大量数据交互的程序效率未必有大的提高。</p>
+
+<p><strong>多线程</strong>：对于IO密集型的程序，multiprocessing.dummy模块使用multiprocessing的接口封装threading，使得多线程编程也变得非常轻松(比如可以使用Pool的map接口，简洁高效)。</p>
+
+<p><strong>分布式</strong>：multiprocessing中的Managers类提供了可以在不同进程之共享数据的方式，可以在此基础上开发出分布式的程序。</p>
+
+<p>不同的业务场景可以选择其中的一种或几种的组合实现程序性能的优化。</p></li>
+
+<li><h3>终级大杀器：PyPy</h3>
+
+<p>PyPy是用RPython(CPython的子集)实现的Python，根据官网的基准测试数据，它比CPython实现的Python要快6倍以上。快的原因是使用了Just-in-Time(JIT)编译器，即动态编译器，与静态编译器(如gcc,javac等)不同，它是利用程序运行的过程的数据进行优化。由于历史原因，目前pypy中还保留着GIL，不过正在进行的STM项目试图将PyPy变成没有GIL的Python。</p>
+
+<p>如果python程序中含有C扩展(非cffi的方式)，JIT的优化效果会大打折扣，甚至比CPython慢（比Numpy）。所以在PyPy中最好用纯Python或使用cffi扩展。</p>
+
+<p>随着STM，Numpy等项目的完善，相信PyPy将会替代CPython。</p></li>
+
+<li><h3>使用性能分析工具</h3>
+
+<p>除了上面在ipython使用到的timeit模块，还有cProfile。cProfile的使用方式也非常简单： <code>python -m cProfile filename.py</code>，<code>filename.py</code> 是要运行程序的文件名，可以在标准输出中看到每一个函数被调用的次数和运行的时间，从而找到程序的性能瓶颈，然后可以有针对性地优化。</p></li>
+</ol>
+
+<h3>参考</h3>
+
+<p><a href="http://docs.cython.org/src/tutorial/numpy.html">1</a> <a href="http://www.ibm.com/developerworks/cn/linux/l-cn-python-optim/">http://www.ibm.com/developerworks/cn/linux/l-cn-python-optim/</a></p>
+
+<p>[2] <a href="http://maxburstein.com/blog/speeding-up-your-python-code/">http://maxburstein.com/blog/speeding-up-your-python-code/</a></p>
+
+    <hr>
+    <div class="pagination">
+      <ul>
+        <ul>
+          
+          
+            <li class="prev disabled"><a>&larr; Previous</a></li>
+          
+
+            <li><a href="/archive">Archive</a></li>
+
+          
+            <li class="next"><a href="/数据结构/%E5%B8%B8%E8%A7%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95%E5%8F%8A%E5%85%B6%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF/" title="常见的数据结构与算法及其应用场景">Next &rarr;</a></li>
+          
+          
+        </ul>
+      </ul>
+    </div>
+    <hr>
+    
+<div id="disqus_thread"></div>
+<script>
+    var disqus_developer = 1;
+    var disqus_shortname = 'jekyllbootstrap'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+  </div>
+  
+  <div class="span4">
+    <h4>Published</h4>
+    <div class="date"><span>2014-09-12</span></div>
+    <br>
+    <h4>Categories</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/categories/#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96-ref">性能优化 <span>1</span></a>
+</li>
+    
+    </ul>
+    <br>
+    <h4>Tags</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/tags/#Python-ref">Python <span>1</span></a>
+</li>
+    
+      <li>
+  <a href="/tags/#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96-ref">性能优化 <span>1</span></a>
+</li>
+    
+    </ul>
+  </div>
+</div>
+
+      </div>
+
+      <footer>
+        <p>&copy; kaiyuan li 2013 
+          with help from <a href="http://github.com/wendal/gor" target="_blank" title="Gor -- Fast Blog">Gor</a>
+          and <a href="http://twitter.github.com/bootstrap/" target="_blank">Twitter Bootstrap</a>
+		  and Idea from <a href="http://ruhoh.com" target="_blank" title="The Definitive Technical Blogging Framework">ruhoh</a>
+        </p>
+      </footer>
+
+    </div> <!-- /container -->
+
+    
+<script src="//cdnjscn.b0.upaiyun.com/libs/prettify/r298/prettify.min.js"></script>
+<script>
+  var pres = document.getElementsByTagName("pre");
+  for (var i=0; i < pres.length; ++i) {
+    pres[i].className = "prettyprint linenums";
+  }
+  prettyPrint();
+</script>
+
+    
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  var pluginUrl = '//www.google-analytics.com/plugins/ga/inpage_linkid.js';
+  _gaq.push(['_require', 'inpage_linkid', pluginUrl]);
+  _gaq.push(['_setAccount', 'UA-123-12']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  </body>
+</html>
