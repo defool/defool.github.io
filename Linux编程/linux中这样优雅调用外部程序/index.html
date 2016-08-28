@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>linux中这样优雅调用外部程序</title>
+  
+    <meta name="author" content="Defooli">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/assets/twitter/stylesheets/bootstrap.min.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/stylesheets/style.css" type="text/css" rel="stylesheet" media="all">
+<link href="/assets/twitter/widgets/google_prettify/stylesheets/twitter-bootstrap.css" type="text/css" rel="stylesheet" media="all">
+ 
+
+    <!-- Le fav and touch icons -->
+  <!-- Update these with your own images
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  -->
+  </head>
+
+  <body>
+
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">七叶的博客</a>
+          <ul class="nav">
+            
+              
+
+
+  <li><a href="/tags">标签</a></li>
+
+
+            
+              
+
+
+  <li><a href="/categories">分类</a></li>
+
+
+            
+              
+
+
+  <li><a href="/about">关于我</a></li>
+
+
+            
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div class="content">
+        <div class="page-header">
+  <h1>linux中这样优雅调用外部程序 </h1>
+</div>
+
+<div class="row">
+  <div class="span8">
+    <p>在linux下写程序时，为了复用已经存在的程序或避免不稳定的第三方库导致主进程crash， 需要调用外部程序去实现相应的功能。
+这时很多人会直接使用标准库里的函数，如C/C++中的system/popen。从源码可以看到，system或popen都是fork+exec这种linux经典的方式去调用外部程序。但是如果没有合理地使用fork+exec，可能会产生一些意想不到问题，或者满足不了需求。下面是具体的例子和相应的解决方案。</p>
+
+<h2>1. 程序在启动时端口被调用的子进程占用了</h2>
+
+<p>在重启程序时，可能会有报端口被占用了，导致进程起不来，这时可以用netstat -nlp | grep <port>看这个端口是被哪个程序占用了。有时会发现是端口是被自己之前调用的程序给占用了，原因是fork出来的子进程会默认继承父进程的文件描述符，即使运行exec之后新进程也还会占用这些文件描述符，父进程退出时子进程还在运行，文件描述符（包含端口、打开文件句柄等）没有释放。所以如果没有特殊要求，fork出来的子进程都应该把继承的文件描述符给关了，或者在打开文件描述符的时候加上O_CLOEXEC参数，这样调用exec运行程序就不会继承父进程的文件描述符啦。</p>
+
+<h2>2. 被调用的进程可能会变成僵尸进程</h2>
+
+<p>其实僵尸进程并没有名字那么可怕，僵尸进程是进程生命周期的一部分。每一个进程退出后，还会在内核进程表时保存有包含进程ID、占用资源等信息的记录，交给父进程来处理，这就是僵尸进程。这时用ps看进程的后面会有<defunct>的标识。如果僵尸进程没有得到及时清理，占用的资源（如进程ID）就不会释放，可能会造成因资源耗尽机器死机的后果。所以在用fork调用外部命令时，需要在父进程调用wait或waitpid等待子进程退出。如果父进程在wait子进程退出之前就不幸挂了，init进程（pid为1）将会接管子进程的清理工作，定时清理僵尸进程，如果很不幸init进程也清理不了僵尸进程（内核出bug了），那么只有重启机器才能清理这样的僵尸进程了。</p>
+
+<h2>3. 外部程序不可控，需要给子进程设定超时时间</h2>
+
+<p>调用外面程序如果用同步调用的方式，一个平时很快就执行完的程序可能在异常情况下会变得很久，导致主程序进程莫名其妙地卡住了。为了保证主程序的健壮性，需要设一个超时时间来限定外部程序的运行的时间。具体的实现并不复杂，在等待子进程时，循环调用加上WNOHANG参数的waitpid函数，如果超时了就直接kill掉子进程。</p>
+
+<h2>4. 需要获取进程的标准输出/标准出错(默认popen只有标准输出)</h2>
+
+<p>要获取外部程序的标准输出和出错信息，一般会用pipe+dup2方式。在fork之前先pipe，在fork之后子进程中将标准输出/标准出错用dup2重定向到pipe的写入端，父进程从读出端获取调用进程的标准输出/标准出错。在用pipe时一定要注意可能的卡死问题，因为pipe的缓冲区大小是固定的，如果写满了没有读子进程会卡住，子进程没有关闭写端的话父进程也会卡住。</p>
+
+<h2>5. 注意信号处理</h2>
+
+<p>除了文件描述符，fork出来的子进程也会继承父进程的信号处理函数，而exec执行之后信号处理机制会被重置成系统默认的。如果程序中有自定义信号处理函数，或者需要修改系统默认信息处理方式，在fork+exec过程中可以调用signal/sigaction来做相应的操作。</p>
+
+<h2>6. 需要异步调用，不关心外部程序的调用结果</h2>
+
+<p>对于需要异步调用的场景，需要将子进程作为daemon启动，不用wait子进程（将这个工作交给init进程），这样可以避免子进程退出会变成僵尸进程。实现deamon进程的主要有两种方式，一种是调用标准库中daemon，另一种方式是fork+setsid+再次fork。</p>
+
+<h2>7. 安全性和防止误操作</h2>
+
+<p>很多时候调用的外部程序是由变量组装的，如果用/bin/sh去调用这个程序，那么会存在被恶意攻击或误操作的风险。例如调用ls  $tmp_dir/这样的程序看，当$tmp_dir刚好是; rm -rf /*时（恶意攻击），程序就变成了ls ; rm -rf */。避免类似问题的方式是在exec时，调用具体的程体而不是将程序名和参数传递给shell去执行。</p>
+
+<h2>8. 大量调用外部程序时如何提升性能</h2>
+
+<p>大家都在用fork+exec来运行外部命令，似乎也没有其他的方式。如果需要大量调用外部程序，每次fork一个进程，虽然有了写时复制这样的优化策略，但是复制一个进程在内核进程列表的数据也要不小的开销，有没有提升性能的空间呢？答案是有的，posix_spawn。对于使用内存比较多的进程，使用posix_spawn可以避免在创建新进程时复制进程页表，在性能上也会有数量级上的提升。</p>
+
+    <hr>
+    <div class="pagination">
+        <ul>
+          
+        </ul>
+        <ul class="pull-right">
+          
+            <li class="next right"><a href="/性能优化/Python%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%8420%E6%9D%A1%E5%BB%BA%E8%AE%AE/" title="Python性能优化的20条建议">Python性能优化的20条建议 &rarr;</a></li>
+          
+        </ul>
+    </div>
+    <hr>
+<!-- 多说评论框 start -->
+  <div class="ds-thread" data-thread-key="linux中这样优雅调用外部程序" data-title="linux中这样优雅调用外部程序" data-url="/Linux编程/linux%E4%B8%AD%E8%BF%99%E6%A0%B7%E4%BC%98%E9%9B%85%E8%B0%83%E7%94%A8%E5%A4%96%E9%83%A8%E7%A8%8B%E5%BA%8F/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"defool"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共JS代码 end -->
+  </div>
+  
+  <div class="span4">
+    <h4>Published</h4>
+    <div class="date"><span>2016-08-28</span></div>
+    <br>
+    <h4>Categories</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/categories/#Linux%E7%BC%96%E7%A8%8B-ref">Linux编程 <span>1</span></a>
+</li>
+    
+    </ul>
+    <br>
+    <h4>Tags</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/tags/#Linux-ref">Linux <span>1</span></a>
+</li>
+    
+      <li>
+  <a href="/tags/#%E7%A8%8B%E5%BA%8F%E8%B0%83%E7%94%A8-ref">程序调用 <span>1</span></a>
+</li>
+    
+    </ul>
+  </div>
+</div>
+
+      </div>
+
+      <footer>
+        <p>&copy; Defooli 2016 
+          with help from <a href="http://github.com/wendal/gor" target="_blank" title="Gor -- Fast Blog">Gor</a>
+        </p>
+      </footer>
+
+    </div> <!-- /container -->
+  </body>
+</html>
