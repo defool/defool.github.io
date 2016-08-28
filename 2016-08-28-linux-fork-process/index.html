@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>首页</title>
+    <title>linux中这样优雅调用外部程序</title>
   
     <meta name="author" content="Defooli">
 
@@ -63,21 +63,13 @@
     <div class="container">
 
       <div class="content">
-        
-<div class="page-header">
-  <h1>首页 </h1>
+        <div class="page-header">
+  <h1>linux中这样优雅调用外部程序 </h1>
 </div>
 
 <div class="row">
-  <div class="span12">
-    
-<h2>最近文章</h2>
-
-
-<div class="post">
-  <h3 class="title"><a href="/2016-08-28-linux-fork-process/">linux中这样优雅调用外部程序</a> <span class="date">2016-08-28</span></h3>
-
-  <p>在linux下写程序时，为了复用已经存在的程序或避免不稳定的第三方库导致主进程crash， 需要调用外部程序去实现相应的功能。
+  <div class="span8">
+    <p>在linux下写程序时，为了复用已经存在的程序或避免不稳定的第三方库导致主进程crash， 需要调用外部程序去实现相应的功能。
 这时很多人会直接使用标准库里的函数，如C/C++中的system/popen。从源码可以看到，system或popen都是fork+exec这种linux经典的方式去调用外部程序。但是如果没有合理地使用fork+exec，可能会产生一些意想不到问题，或者满足不了需求。下面是具体的例子和相应的解决方案。</p>
 
 <h2>1. 程序在启动时端口被调用的子进程占用了</h2>
@@ -94,103 +86,79 @@
 
 <h2>4. 需要获取进程的标准输出/标准出错(默认popen只有标准输出)</h2>
 
+<p>要获取外部程序的标准输出和出错信息，一般会用pipe+dup2方式。在fork之前先pipe，在fork之后子进程中将标准输出/标准出错用dup2重定向到pipe的写入端，父进程从读出端获取调用进程的标准输出/标准出错。在用pipe时一定要注意可能的卡死问题，因为pipe的缓冲区大小是固定的，如果写满了没有读子进程会卡住，子进程没有关闭写端的话父进程也会卡住。</p>
 
-  <div class="more">
-    <a href="/2016-08-28-linux-fork-process/" class="btn">read more..</a>
+<h2>5. 注意信号处理</h2>
+
+<p>除了文件描述符，fork出来的子进程也会继承父进程的信号处理函数，而exec执行之后信号处理机制会被重置成系统默认的。如果程序中有自定义信号处理函数，或者需要修改系统默认信息处理方式，在fork+exec过程中可以调用signal/sigaction来做相应的操作。</p>
+
+<h2>6. 需要异步调用，不关心外部程序的调用结果</h2>
+
+<p>对于需要异步调用的场景，需要将子进程作为daemon启动，不用wait子进程（将这个工作交给init进程），这样可以避免子进程退出会变成僵尸进程。实现deamon进程的主要有两种方式，一种是调用标准库中daemon，另一种方式是fork+setsid+再次fork。</p>
+
+<h2>7. 安全性和防止误操作</h2>
+
+<p>很多时候调用的外部程序是由变量组装的，如果用/bin/sh去调用这个程序，那么会存在被恶意攻击或误操作的风险。例如调用ls  $tmp_dir/这样的程序看，当$tmp_dir刚好是; rm -rf /*时（恶意攻击），程序就变成了ls ; rm -rf */。避免类似问题的方式是在exec时，调用具体的程体而不是将程序名和参数传递给shell去执行。</p>
+
+<h2>8. 大量调用外部程序时如何提升性能</h2>
+
+<p>大家都在用fork+exec来运行外部命令，似乎也没有其他的方式。如果需要大量调用外部程序，每次fork一个进程，虽然有了写时复制这样的优化策略，但是复制一个进程在内核进程列表的数据也要不小的开销，有没有提升性能的空间呢？答案是有的，posix_spawn。对于使用内存比较多的进程，使用posix_spawn可以避免在创建新进程时复制进程页表，在性能上也会有数量级上的提升。</p>
+
+    <hr>
+    <div class="pagination">
+        <ul>
+          
+        </ul>
+        <ul class="pull-right">
+          
+            <li class="next right"><a href="/2014-09-12-python-performance/" title="Python性能优化的20条建议">Python性能优化的20条建议 &rarr;</a></li>
+          
+        </ul>
+    </div>
+    <hr>
+<!-- 多说评论框 start -->
+  <div class="ds-thread" data-thread-key="linux中这样优雅调用外部程序" data-title="linux中这样优雅调用外部程序" data-url="/2016-08-28-linux-fork-process/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"defool"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共JS代码 end -->
   </div>
-</div>
-
-<div class="post">
-  <h3 class="title"><a href="/2014-09-12-python-performance/">Python性能优化的20条建议</a> <span class="date">2014-09-12</span></h3>
-
-  <ol>
-<li><h3>优化算法时间复杂度</h3>
-
-<p>算法的时间复杂度对程序的执行效率影响最大，在Python中可以通过选择合适的数据结构来优化时间复杂度，如list和set查找某一个元素的时间复杂度分别是O(n)和O(1)。不同的场景有不同的优化方式，总得来说，一般有分治，分支界限，贪心，动态规划等思想。</p></li>
-
-<li><h3>减少冗余数据</h3>
-
-<p>如用上三角或下三角的方式去保存一个大的对称矩阵。在0元素占大多数的矩阵里使用稀疏矩阵表示。</p></li>
-
-<li><h3>合理使用copy与deepcopy</h3>
-
-<p>对于dict和list等数据结构的对象，直接赋值使用的是引用的方式。而有些情况下需要复制整个对象，这时可以使用copy包里的copy和deepcopy，这两个函数的不同之处在于后者是递归复制的。效率也不一样：（以下程序在ipython中运行）</p>
-
-<pre><code>import copy
-a = range(100000)
-%timeit -n 10 copy.copy(a) # 运行10次 copy.copy(a)
-%timeit -n 10 copy.deepcopy(a)
-10 loops, best of 3: 1.55 ms per loop
-10 loops, best of 3: 151 ms per loop
-</code></pre></li>
-</ol>
-
-
-  <div class="more">
-    <a href="/2014-09-12-python-performance/" class="btn">read more..</a>
-  </div>
-</div>
-
-<div class="post">
-  <h3 class="title"><a href="/2014-02-19-data-struct-and-algorithm/">常见的数据结构与算法及其应用场景</a> <span class="date">2014-02-19</span></h3>
-
-  <h2>1. 常见数据结构</h2>
-
-<p>根据wikipedia上的列表，数据结构分为线性、树、哈希、图等类型。</p>
-
-<h3>线性数据结构</h3>
-
-<ul>
-<li><p>数组</p>
-
-<p>位图索引：一种高效、节省空间的索引。</p></li>
-
-<li><p>链表</p></li>
-
-<li><p>块状链表</p>
-
-<p>综合了数组随机访问、遍历、存储空间方面的优点和链表插入、删除、空间扩展方面的优点。[2]</p></li>
-
-<li><p>对应的抽象数据类型：栈，队列（单/双向、优先队列）</p></li>
-</ul>
-
-<h3>树型数据结构</h3>
-
-
-  <div class="more">
-    <a href="/2014-02-19-data-struct-and-algorithm/" class="btn">read more..</a>
-  </div>
-</div>
-
-<div class="post">
-  <h3 class="title"><a href="/2013-10-03-git-help/">Git使用帮助</a> <span class="date">2013-10-03</span></h3>
-
-  <p><strong>Git</strong>是一个分布式的版本管理软件。相比于SVN，Git分布式的模式使得它对网络的依赖性较低， 只有在同步最新版本(fetch/push)时才需要连接网络，同时Git具有更高效的存储方式。</p>
-
-<h2>安装</h2>
-
-<p>Ubuntu可用apt-get安装：<code>apt-get install git</code>。或通过[源码安装][1]。</p>
-
-<h2>配置</h2>
-
-<p>使用<code>git config</code>进行配置，安装后最好设定自己的用户名和邮箱，也可以给git命令设置别名。</p>
-
-<pre><code>git config --global user.name myname # 要改成你的用户名
-git config --global user.email myemail@mail.com # 改成你的邮箱名
-git config --global core.editor vim
-git config --global alias.co checkout
-git config --global alias.br branch
-git config --global alias.ci commit
-git config --global alias.st status
-git config --global --list
-</code></pre>
-
-
-  <div class="more">
-    <a href="/2013-10-03-git-help/" class="btn">read more..</a>
-  </div>
-</div>
-
+  
+  <div class="span4">
+    <h4>Published</h4>
+    <div class="date"><span>2016-08-28</span></div>
+    <br>
+    <h4>Categories</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/categories/#Linux%E7%BC%96%E7%A8%8B-ref">Linux编程 <span>1</span></a>
+</li>
+    
+    </ul>
+    <br>
+    <h4>Tags</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/tags/#Linux-ref">Linux <span>1</span></a>
+</li>
+    
+      <li>
+  <a href="/tags/#%E7%A8%8B%E5%BA%8F%E8%B0%83%E7%94%A8-ref">程序调用 <span>1</span></a>
+</li>
+    
+    </ul>
   </div>
 </div>
 
