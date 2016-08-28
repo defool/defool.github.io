@@ -1,0 +1,13 @@
+title: 七叶的博客
+tagline: 
+author :
+  name : kaiyuan li
+  email : defool@foxmail.com
+  github : defool
+  twitter : defool
+
+navigation :
+  - tags.html
+  - categories.html
+  - about.md
+
